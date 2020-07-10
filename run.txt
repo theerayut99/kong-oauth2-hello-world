@@ -1,0 +1,65 @@
+==================================
+==================================
+# Let's add a simple test service:
+curl -X POST \
+  --url "http://127.0.0.1:8001/services" \
+  --data "name=mock-service" \
+  --data "url=http://10.1.112.75/api/generali/oauth1/valid"
+
+# Let's add a route for that service:
+curl -X POST \
+  --url "http://127.0.0.1:8001/services/mock-service/routes" \
+  --data 'hosts[]=10.1.112.75' \
+  --data 'paths[]=/mock'
+
+# Now try the new API:
+curl -X GET \
+  --url "http://127.0.0.1/mock" \
+  --header "Host: 10.1.112.75"
+
+#Let's add the OAuth 2.0 plugin, with three available scopes:
+curl -X POST \
+  --url http://127.0.0.1:8001/services/mock-service/plugins/ \
+  --data "name=oauth2" \
+  --data "config.scopes=email" \
+  --data "config.scopes=phone" \
+  --data "config.scopes=address" \
+  --data "config.mandatory_scope=true" \
+  --data "config.enable_authorization_code=true"
+
+# Let's create a Kong consumer (called thefosk):
+curl -X POST \
+  --url "http://127.0.0.1:8001/consumers/" \
+  --data "username=thefosk"
+
+# And the first OAuth 2.0 client application called Hello World App:
+curl -X POST \
+  --url "http://127.0.0.1:8001/consumers/thefosk/oauth2/" \
+  --data "name=Hello World App" \
+  --data "redirect_uris[]=http://10.1.112.75/"
+
+
+http://10.1.112.74:3301/authorize?response_type=code&scope=email%20address&client_id=rns7HgsmhBp2gWOIKaPRGHYHyJ29OEK7
+
+curl -X POST \
+--url "https://127.0.0.1:8443/mock/oauth2/token" \
+--header "Host: 10.1.112.75" \
+--data "grant_type=authorization_code" \
+--data "client_id=rns7HgsmhBp2gWOIKaPRGHYHyJ29OEK7" \
+--data "client_secret=c7tEs1aqxN8TJg9WtqThcbPME0aKexja" \
+--data "redirect_uri=http://10.1.112.75/" \
+--data "code=I2WGRgYYCxqOeJL206vTVHl7Fn0tGc7J" \
+--insecure
+
+export PROVISION_KEY="XrcJ6Y28n1Phhj604DsWwPqg32HqVGh9"
+export KONG_ADMIN="http://127.0.0.1:8001"
+export KONG_API="https://127.0.0.1:8443"
+export API_PATH="/mock"
+export SERVICE_HOST="10.1.112.75"
+export SCOPES="{ \
+  \"email\": \"Grant permissions to read your email address\", \
+  \"address\": \"Grant permissions to read your address information\", \
+  \"phone\": \"Grant permissions to read your mobile phone number\" \
+}"
+
+export LISTEN_PORT=3301
